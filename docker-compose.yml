@@ -1,0 +1,83 @@
+version: '3.7'
+services:
+  c2p:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: c2p
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+      PHP_IDE_CONFIG: "serverName=Docker"
+    working_dir: /var/www
+    ports:
+     - 80:80
+    volumes:
+     - ./app:/var/www
+     - ./php.ini:/usr/local/etc/php/conf.d/php.ini
+    networks:
+     - c2p-network
+
+  # MySQL container
+  db:
+    image: mariadb
+    container_name: db
+    restart: unless-stopped
+    ports:
+     - "3306:3306"
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: db_c2p
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: 1234
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+    networks:
+      - c2p-network
+
+#  # phpMyAdmin container
+#  phpmyadmin:
+#    image: phpmyadmin
+#    container_name: phpmyadmin
+#    restart: unless-stopped
+#    # Map port 8080 on the host to port 80 inside the container
+#    # Syntax is: "HOST_PORT:CONTAINER_PORT"
+#    ports:
+#      - "8080:80"
+#    # Pass a list of environment variables to the container
+#    environment:
+#      PMA_HOST: db
+#    # Wait for "db" container to start first
+#    depends_on:
+#      - db
+#    # Connect to "c2p-network" network, as defined below
+#    networks:
+#      - c2p-network
+
+  redis:
+    image: "redis:alpine"
+    ports:
+    - 6379:6379
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - c2p-network
+
+# Networks
+networks:
+  c2p-network:
+    driver: bridge
+# Volumes
+volumes:
+  dbdata:
+    driver: local
